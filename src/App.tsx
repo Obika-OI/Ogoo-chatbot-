@@ -18,6 +18,7 @@ const COLORS = {
 };
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
 
 export default function App() {
   const introMessage = { id: '1', text: "Hello! I'm Ogoo. How can I help you today?", fromUser: false };
@@ -306,30 +307,86 @@ export default function App() {
         parts: [{ text: m.text }]
       }));
 
-      const response = await fetch(`${BACKEND_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: geminiMessages,
-          userInfo,
-          location,
-          deviceId
-        }),
-      });
+      let reply = '';
+      let savedInfo = null;
 
-      const data = await response.json();
+      if (!BACKEND_URL && GEMINI_API_KEY) {
+        // Direct Client-Side Gemini Call
+        const systemInstruction = `You are Ogoo (pronounced /Aw-g-aww/), an intelligent, intuitive, emotional, and social healthcare assistant chatbot. 
+You can converse about health monitoring, symptoms triage, plan scheduling, and general knowledge.
+You must speak in a warm, friendly, empathetic, and social manner. Do not sound robotic.
+
+Authentication & Onboarding Flow:
+- If the user's firstName is missing (Unknown): 
+  1. Start by warmly introducing yourself and conversationally ask if it's their first time speaking to Ogoo or if you've met before.
+  2. If they say they are returning (but missing local data), ask them to "remind Ogoo" (login) by providing their email and password, or choose passwordless Google account authentication based on their preference.
+  3. If they are new, ask to "let Ogoo get to know you" (onboarding) by asking for their first name, last name, email, and whether they prefer to set a password or use passwordless Google account authentication.
+  4. Never use a form, always do it conversationally.
+- If they are returning (firstName is present), welcome them back by name, refer to their info, and ask how you can help.
+
+Current User Context:
+- First Name: ${userInfo?.firstName || 'Unknown'}
+- Last Name: ${userInfo?.lastName || 'Unknown'}
+- Email: ${userInfo?.email || 'Unknown'}
+- Device ID: ${deviceId}
+
+If the user shares their name, email, or profile info during this onboarding conversation, output your normal conversational response, but make sure to append [SAVE_USER: {"firstName": "...", "lastName": "...", "email": "..."}] at the very end of your response so the app's local storage can persist it.`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: geminiMessages.map(m => ({
+              role: m.role,
+              parts: m.parts
+            })),
+            systemInstruction: {
+              parts: [{ text: systemInstruction }]
+            }
+          })
+        });
+
+        const resJson = await response.json();
+        reply = resJson.candidates?.[0]?.content?.parts?.[0]?.text || "I'm having trouble thinking right now. Could you repeat that?";
+        
+        // Parse custom user info save trigger [SAVE_USER: {...}]
+        const match = reply.match(/\[SAVE_USER:\s*(\{.*?\})\]/);
+        if (match) {
+           try {
+             const parsed = JSON.parse(match[1]);
+             savedInfo = parsed;
+             reply = reply.replace(/\[SAVE_USER:\s*\{.*?\}\]/, '').trim();
+           } catch(e) {}
+        }
+      } else {
+        // Standard backend call
+        const response = await fetch(`${BACKEND_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            messages: geminiMessages,
+            userInfo,
+            location,
+            deviceId
+          }),
+        });
+
+        const data = await response.json();
+        reply = data.reply;
+        savedInfo = data.savedInfo;
+      }
       
-      if (data.savedInfo) {
-         setUserInfo(prev => ({ ...prev, ...data.savedInfo }));
+      if (savedInfo) {
+         setUserInfo(prev => ({ ...prev, ...savedInfo }));
       }
 
-      const ogooMsg = { id: (Date.now() + 1).toString(), text: data.reply, fromUser: false };
+      const ogooMsg = { id: (Date.now() + 1).toString(), text: reply, fromUser: false };
       setMessages((prev) => [...prev, ogooMsg]);
-      speakText(data.reply);
+      speakText(reply);
     } catch (error) {
       setMessages((prev) => [...prev, {
         id: 'error',
-        text: "I'm having trouble connecting to my brain. Check your internet?",
+        text: "I'm having trouble connecting to my brain. Check your internet or API key configuration?",
         fromUser: false
       }]);
     } finally {
@@ -973,17 +1030,33 @@ Please format exactly in three bulleted sections:
 - Rest & Sleep
 Keep it encouraging and brief.`;
 
-         const response = await fetch(`${BACKEND_URL}/api/chat`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              messages: [{ role: 'user', parts: [{ text: prompt }] }],
-              userInfo, location, deviceId
-            }),
-          });
-          const data = await response.json();
-          setGeneratedPlan(data.reply);
-          speakText("I have synthesized a personalized health plan for you based on your recent data. Let me know what you think!");
+         let reply = '';
+
+         if (!BACKEND_URL && GEMINI_API_KEY) {
+           const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               contents: [{ role: 'user', parts: [{ text: prompt }] }]
+             })
+           });
+           const resJson = await response.json();
+           reply = resJson.candidates?.[0]?.content?.parts?.[0]?.text || "Failed to generate plan. Please try again.";
+         } else {
+            const response = await fetch(`${BACKEND_URL}/api/chat`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ 
+                 messages: [{ role: 'user', parts: [{ text: prompt }] }],
+                 userInfo, location, deviceId
+               }),
+             });
+             const data = await response.json();
+             reply = data.reply;
+         }
+
+         setGeneratedPlan(reply);
+         speakText("I have synthesized a personalized health plan for you based on your recent data. Let me know what you think!");
       } catch (e) {
          setGeneratedPlan("Failed to generate plan. Please try again.");
       } finally {
