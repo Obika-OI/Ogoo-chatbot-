@@ -50,7 +50,7 @@ export default function App() {
   const [planTasks, setPlanTasks] = useState<{ id: string, category: string, time: string, checked: boolean }[]>([]);
   const [vitalsHistory, setVitalsHistory] = useState<{ id: string, hr: number, bpSys: number, bpDia: number, spo2: number, temp: number, date: number }[]>([]);
   const [activityData, setActivityData] = useState({ steps: 0, activeMinutes: 0, calories: 0 });
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   // Load from local storage
   useEffect(() => {

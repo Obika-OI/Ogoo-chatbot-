@@ -100,6 +100,17 @@ function getFallbackResponse(text: string, user: UserProfile): { reply: string; 
   }
 
   // Handle conversational onboarding responses
+  if (!user.firstName && (!extracted.firstName && !extracted.email)) {
+    if (lower.includes('first time') || lower.includes('new')) {
+      reply = `Welcome! I'd love to get to know you. Could you share your first name, last name, email, and let me know if you prefer to set a password or use Google passwordless login?`;
+      return { reply, savedInfo };
+    }
+    if (lower.includes('met before') || lower.includes('returning') || lower.includes('login') || lower.includes('remind')) {
+      reply = `Welcome back! To remind me, could you provide your email and password, or let me know if you prefer to use Google passwordless login?`;
+      return { reply, savedInfo };
+    }
+  }
+
   if (extracted.firstName && !user.firstName) {
     reply = `It's wonderful to meet you, ${extracted.firstName}! Can you tell me your email and if you'd like to use Google passwordless login or create a password?`;
     return { reply, savedInfo };
@@ -114,7 +125,7 @@ function getFallbackResponse(text: string, user: UserProfile): { reply: string; 
     if (user.firstName) {
       reply = `Hello ${user.firstName}! Welcome back. How is your health today? I'm ready to discuss your vitals, liquid intake, or any general wellness queries you have!`;
     } else {
-      reply = `Hello! I'm Ogoo, your intuitive, empathetic health companion. Welcome! I see you are connecting from device ${user.deviceId}. To personalize your care, may I ask for your name and email? (You can also sign in passwordless with Google!)`;
+      reply = `Hello! I'm Ogoo, your intuitive, empathetic health companion. Is it your first time speaking to Ogoo, or have we met before?`;
     }
   } else if (lower.includes('vital') || lower.includes('heart') || lower.includes('pulse')) {
     reply = `Your heart rate is a vital indicator of cardiovascular health! A normal resting heart rate ranges from 60 to 100 beats per minute. If you are checking your vitals, take a deep breath, sit comfortably, and let me know how you feel.`;
@@ -189,10 +200,16 @@ app.post('/api/chat', async (req, res) => {
       let systemInstruction = `You are Ogoo (pronounced /Aw-g-aww/), an intelligent, intuitive, emotional, and social healthcare assistant chatbot. 
 You can converse about health monitoring, symptoms triage, plan scheduling, and general knowledge.
 You must speak in a warm, friendly, empathetic, and social manner. Do not sound robotic.
-Verify if they are a new or returning user. 
+
+Authentication & Onboarding Flow:
+- If the user's firstName is missing (Unknown): 
+  1. Start by warmly introducing yourself and conversationally ask if it's their first time speaking to Ogoo or if you've met before.
+  2. If they say they are returning (but missing local data), ask them to "remind Ogoo" (login) by providing their email and password, or choose passwordless Google account authentication based on their preference.
+  3. If they are new, ask to "let Ogoo get to know you" (onboarding) by asking for their first name, last name, email, and whether they prefer to set a password or use passwordless Google account authentication.
+  4. Never use a form, always do it conversationally.
 - If they are returning (firstName is present), welcome them back by name, refer to their info, and ask how you can help.
-- If they are new (firstName is missing), warmly introduce yourself and conversationally ask for their first name, last name, and email to set up their profile (passwordless login). Never use a form, always do it conversationally.
-You should also mention that you've picked up their device ID, IP, and location context to synchronize their health profile.
+
+You should also mention that you've picked up their device ID, IP, and location context to synchronize their health profile when appropriate.
 
 Current User Context:
 - First Name: ${user.firstName || 'Unknown'}
