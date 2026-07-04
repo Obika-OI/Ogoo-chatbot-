@@ -17,6 +17,8 @@ const COLORS = {
   online: '#4CAF50'
 };
 
+const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || '';
+
 export default function App() {
   const introMessage = { id: '1', text: "Hello! I'm Ogoo. How can I help you today?", fromUser: false };
   const [messages, setMessages] = useState([introMessage]);
@@ -304,7 +306,7 @@ export default function App() {
         parts: [{ text: m.text }]
       }));
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -971,7 +973,7 @@ Please format exactly in three bulleted sections:
 - Rest & Sleep
 Keep it encouraging and brief.`;
 
-         const response = await fetch('/api/chat', {
+         const response = await fetch(`${BACKEND_URL}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
