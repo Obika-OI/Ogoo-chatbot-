@@ -1,0 +1,6 @@
+{
+  "name": "Ogoo Bot",
+  "description": "A healthcare assistant chatbot for health monitoring, symptoms triage, and plan scheduling built with React Native.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
