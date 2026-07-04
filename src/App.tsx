@@ -37,8 +37,27 @@ export default function App() {
 
   React.useEffect(() => {
     if (Platform.OS === 'web' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLocation({ lat, lng });
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+          const data = await res.json();
+          const country = data.address?.country_code?.toLowerCase();
+          let number = '911';
+          if (['gb', 'uk'].includes(country)) number = '999';
+          else if (['au'].includes(country)) number = '000';
+          else if (['nz'].includes(country)) number = '111';
+          else if (['in'].includes(country)) number = '112';
+          else if (['za'].includes(country)) number = '10111';
+          else if (['jp', 'kr'].includes(country)) number = '119';
+          else if (['cn'].includes(country)) number = '120';
+          else if (['br'].includes(country)) number = '192';
+          else if (['fr', 'de', 'it', 'es', 'nl', 'be', 'se', 'no', 'fi', 'dk', 'ie', 'pl', 'pt', 'gr', 'cz', 'at', 'ch'].includes(country)) number = '112';
+          
+          setEmergencyInfo(prev => prev.countryCode === '911' ? { ...prev, countryCode: number } : prev);
+        } catch(e){}
       }, () => console.log('Location access denied or failed'));
     }
   }, []);
@@ -51,6 +70,19 @@ export default function App() {
   const [vitalsHistory, setVitalsHistory] = useState<{ id: string, hr: number, bpSys: number, bpDia: number, spo2: number, temp: number, date: number }[]>([]);
   const [activityData, setActivityData] = useState({ steps: 0, activeMinutes: 0, calories: 0 });
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [emergencyInfo, setEmergencyInfo] = useState({ name: '', phone: '', countryCode: '911' });
+  const [showEmergencySettings, setShowEmergencySettings] = useState(false);
+  const [emergencyMode, setEmergencyMode] = useState<{ active: boolean, reason: string }>({ active: false, reason: '' });
+  const [distressListening, setDistressListening] = useState(false);
+  const emergencyModeRef = useRef({ active: false, reason: '' });
+  const recognitionRef = useRef<any>(null);
+
+  const triggerEmergency = (reason: string) => {
+    if (emergencyModeRef.current.active) return;
+    emergencyModeRef.current = { active: true, reason };
+    setEmergencyMode({ active: true, reason });
+    speakText(`Emergency protocol activated. ${reason}. Calling for help in 10 seconds.`);
+  };
 
   // Load from local storage
   useEffect(() => {
@@ -66,6 +98,10 @@ export default function App() {
         if (storedActivity) setActivityData(JSON.parse(storedActivity));
         const storedVoice = localStorage.getItem('ogoo_voice');
         if (storedVoice) setVoiceEnabled(JSON.parse(storedVoice));
+        const storedEmergency = localStorage.getItem('ogoo_emergency');
+        if (storedEmergency) setEmergencyInfo(JSON.parse(storedEmergency));
+        const storedDistress = localStorage.getItem('ogoo_distress');
+        if (storedDistress) setDistressListening(JSON.parse(storedDistress));
       } catch (e) {
         console.error("Local storage load error", e);
       }
@@ -88,6 +124,116 @@ export default function App() {
   useEffect(() => {
     if (Platform.OS === 'web') localStorage.setItem('ogoo_voice', JSON.stringify(voiceEnabled));
   }, [voiceEnabled]);
+  useEffect(() => {
+    if (Platform.OS === 'web') localStorage.setItem('ogoo_emergency', JSON.stringify(emergencyInfo));
+  }, [emergencyInfo]);
+  useEffect(() => {
+    if (Platform.OS === 'web') localStorage.setItem('ogoo_distress', JSON.stringify(distressListening));
+  }, [distressListening]);
+
+  // Fall Detection (DeviceMotion)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleMotion = (event: DeviceMotionEvent) => {
+        const acc = event.accelerationIncludingGravity;
+        if (acc && acc.x !== null && acc.y !== null && acc.z !== null) {
+          const magnitude = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+          if (magnitude > 25) { // Threshold for sudden impact/fall
+            triggerEmergency("Fall detected!");
+          }
+        }
+      };
+      window.addEventListener('devicemotion', handleMotion);
+      return () => window.removeEventListener('devicemotion', handleMotion);
+    }
+  }, []);
+
+  // Continuous Distress Listening (Voice + Volume)
+  useEffect(() => {
+    let audioContext: AudioContext;
+    let analyser: AnalyserNode;
+    let microphone: MediaStreamAudioSourceNode;
+    let volumeInterval: any;
+
+    if (Platform.OS === 'web' && distressListening) {
+      // 1. Keyword Recognition
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const rec = new SpeechRecognition();
+        rec.continuous = true;
+        rec.interimResults = false;
+        rec.lang = 'en-US';
+
+        rec.onresult = (event: any) => {
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript.toLowerCase();
+            const painWords = ['help', 'emergency', 'distress', 'ah', 'ahh', 'ahhh', 'ouch', 'it hurts', 'stop'];
+            if (painWords.some(word => transcript.includes(word))) {
+              triggerEmergency("Pain or distress sound recognized");
+            }
+          }
+        };
+
+        rec.onend = () => {
+          if (distressListening) {
+            try { rec.start(); } catch(e){}
+          }
+        };
+        
+        try { rec.start(); } catch(e){}
+        recognitionRef.current = rec;
+      }
+
+      // 2. Volume/Screaming Detection
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        volumeInterval = setInterval(() => {
+          analyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+          }
+          const average = sum / bufferLength;
+          // Threshold for loud noise / screaming
+          if (average > 100) {
+            triggerEmergency("Loud sound (screaming) detected");
+          }
+        }, 500);
+      }).catch(err => console.log('Mic error for volume detection', err));
+
+      return () => {
+        if (recognitionRef.current) recognitionRef.current.stop();
+        if (volumeInterval) clearInterval(volumeInterval);
+        if (audioContext) audioContext.close();
+      };
+    } else {
+      if (recognitionRef.current) recognitionRef.current.stop();
+    }
+  }, [distressListening]);
+
+  // Periodic Check-in
+  useEffect(() => {
+    const checkinInterval = setInterval(() => {
+      const msgs = ['Hi there! It\'s time for a quick check-in. How are you feeling right now, physically and mentally?', 'Just checking in! Have you tracked your hydration and vitals recently?', 'Hello! Remember to take a quick break if your screen time is high. How are your stress levels?'];
+      const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+      setMessages(prev => {
+        // Prevent duplicate consecutive check-ins
+        const lastMsg = prev[prev.length - 1];
+        if (lastMsg && !lastMsg.fromUser && lastMsg.text === randomMsg) return prev;
+        return [...prev, { id: Date.now().toString(), text: randomMsg, fromUser: false }];
+      });
+      speakText(randomMsg);
+    }, 60000); // Check-in every 60 seconds for demo purposes
+    
+    return () => clearInterval(checkinInterval);
+  }, []);
 
   const speakText = (text: string) => {
     if (Platform.OS === 'web' && voiceEnabled && 'speechSynthesis' in window) {
@@ -130,6 +276,10 @@ export default function App() {
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setInputText(transcript);
+      const lower = transcript.toLowerCase();
+      if (lower.includes('help') || lower.includes('emergency') || lower.includes('distress')) {
+        triggerEmergency("Distress command recognized");
+      }
     };
 
     recognition.start();
@@ -220,6 +370,106 @@ export default function App() {
     </View>
   );
 
+  const EmergencyAlertModal = () => {
+    const [countdown, setCountdown] = useState(10);
+    
+    useEffect(() => {
+      let timer: any;
+      if (emergencyMode.active && countdown > 0) {
+        timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      } else if (emergencyMode.active && countdown === 0) {
+        // Call!
+        const phoneToCall = emergencyInfo.phone || emergencyInfo.countryCode || '911';
+        speakText(`Calling ${phoneToCall}`);
+        if (Platform.OS === 'web') window.location.href = `tel:${phoneToCall}`;
+        emergencyModeRef.current = { active: false, reason: '' };
+        setEmergencyMode({ active: false, reason: '' });
+        setCountdown(10);
+      }
+      return () => clearTimeout(timer);
+    }, [emergencyMode, countdown, emergencyInfo]);
+  
+    const cancelEmergency = () => {
+      emergencyModeRef.current = { active: false, reason: '' };
+      setEmergencyMode({ active: false, reason: '' });
+      setCountdown(10);
+      speakText("Emergency protocol cancelled.");
+    };
+  
+    return (
+      <Modal visible={emergencyMode.active} animationType="fade" transparent>
+        <View style={[styles.modalBg, { backgroundColor: 'rgba(255,0,0,0.85)' }]}>
+          <View style={[styles.modalContent, { borderColor: '#FFF' }]}>
+             <Text style={[styles.modalTitle, { color: '#FF4B4B', textAlign: 'center', fontSize: 28 }]}>EMERGENCY</Text>
+             <Text style={{color: '#FFF', textAlign: 'center', marginVertical: 16, fontSize: 18}}>{emergencyMode.reason}</Text>
+             <Text style={{color: '#FFF', textAlign: 'center', fontSize: 56, fontWeight: 'bold'}}>{countdown}</Text>
+             <Text style={{color: '#FFF', textAlign: 'center', marginVertical: 16, fontSize: 16}}>Calling {emergencyInfo.name || 'Emergency Services'} in {countdown}s...</Text>
+             <TouchableOpacity onPress={cancelEmergency} style={[styles.heroButtonSecondary, { borderColor: '#FFF', marginTop: 20 }]}>
+               <Text style={[styles.heroButtonText, {color: '#FFF'}]}>Cancel</Text>
+             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const EmergencySettingsModal = () => {
+    return (
+      <Modal visible={showEmergencySettings} animationType="slide" transparent>
+        <View style={styles.modalBg}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Emergency Setup</Text>
+              <TouchableOpacity onPress={() => setShowEmergencySettings(false)}><X color="#FFF" size={24}/></TouchableOpacity>
+            </View>
+  
+            <Text style={[styles.cardHeader, {fontSize: 15}]}>Emergency Contact</Text>
+            <TextInput 
+              style={[styles.input, {borderWidth: 1, borderColor: '#342E5E', borderRadius: 12, paddingHorizontal: 12, marginVertical: 8, height: 44}]}
+              placeholder="Contact Name"
+              placeholderTextColor={COLORS.textSub}
+              value={emergencyInfo.name}
+              onChangeText={(t) => setEmergencyInfo({...emergencyInfo, name: t})}
+            />
+            <TextInput 
+              style={[styles.input, {borderWidth: 1, borderColor: '#342E5E', borderRadius: 12, paddingHorizontal: 12, marginBottom: 16, height: 44}]}
+              placeholder="Phone Number"
+              keyboardType="phone-pad"
+              placeholderTextColor={COLORS.textSub}
+              value={emergencyInfo.phone}
+              onChangeText={(t) => setEmergencyInfo({...emergencyInfo, phone: t})}
+            />
+  
+            <Text style={[styles.cardHeader, {fontSize: 15}]}>Country Emergency Number</Text>
+            <TextInput 
+              style={[styles.input, {borderWidth: 1, borderColor: '#342E5E', borderRadius: 12, paddingHorizontal: 12, marginVertical: 8, height: 44}]}
+              placeholder="e.g. 911, 112, 999"
+              keyboardType="phone-pad"
+              placeholderTextColor={COLORS.textSub}
+              value={emergencyInfo.countryCode}
+              onChangeText={(t) => setEmergencyInfo({...emergencyInfo, countryCode: t})}
+            />
+  
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16}}>
+               <Text style={{color: COLORS.textMain, fontSize: 15, fontWeight: '600'}}>Listen for distress?</Text>
+               <TouchableOpacity onPress={() => setDistressListening(!distressListening)}>
+                  {distressListening ? <Volume2 color={COLORS.online} size={24}/> : <VolumeX color={COLORS.textSub} size={24}/>}
+               </TouchableOpacity>
+            </View>
+
+            <Text style={{color: COLORS.textSub, fontSize: 12, marginTop: 16}}>
+              Ogoo monitors device motion for fall detection, and voice commands for distress (e.g. "help"). When triggered, it will auto-call these numbers.
+            </Text>
+
+            <TouchableOpacity onPress={() => triggerEmergency("Simulated Fall Detected")} style={[styles.heroButtonSecondary, {borderColor: '#FF4B4B', marginTop: 24}]}>
+               <Text style={[styles.heroButtonText, {color: '#FF4B4B'}]}>Test Emergency Protocol</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   const MenuOverlay = () => {
     if (!showMenu) return null;
     return (
@@ -261,6 +511,9 @@ export default function App() {
                Enable to allow Ogoo to speak its responses aloud.
              </Text>
           </View>
+          <TouchableOpacity onPress={() => setShowEmergencySettings(true)} style={[styles.heroButtonSecondary, {marginTop: 16}]}>
+            <Text style={[styles.heroButtonText, {color: COLORS.accent}]}>Emergency Settings</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -400,6 +653,11 @@ export default function App() {
     const [isScanning, setIsScanning] = useState(false);
     const [scanStage, setScanStage] = useState('');
     const scanAnim = useRef(new Animated.Value(0)).current;
+    
+    // Manual entry & temp toggle
+    const [tempUnit, setTempUnit] = useState<'F'|'C'>('F');
+    const [showManual, setShowManual] = useState(false);
+    const [manualEntry, setManualEntry] = useState({ hr: '', bpSys: '', bpDia: '', spo2: '', temp: '' });
 
     const startScan = () => {
       setIsScanning(true);
@@ -418,6 +676,8 @@ export default function App() {
         setIsScanning(false);
         scanAnim.stopAnimation();
         
+        // Random scan generation
+        const newTempF = parseFloat((Math.random() * (99.1 - 97.5) + 97.5).toFixed(1));
         const newReading = {
           id: Date.now().toString(),
           date: Date.now(),
@@ -425,11 +685,50 @@ export default function App() {
           bpSys: Math.floor(Math.random() * (125 - 110 + 1) + 110),
           bpDia: Math.floor(Math.random() * (85 - 70 + 1) + 70),
           spo2: Math.floor(Math.random() * (100 - 95 + 1) + 95),
-          temp: parseFloat((Math.random() * (99.1 - 97.5) + 97.5).toFixed(1))
+          temp: newTempF
         };
-        setVitalsHistory([newReading, ...vitalsHistory]);
-        speakText("Bio scan complete. Your vitals have been updated successfully.");
+        addVitalReading(newReading, 'Bio scan complete.');
       }, 4500);
+    };
+
+    const submitManual = () => {
+       let tempF = parseFloat(manualEntry.temp);
+       if (tempUnit === 'C' && !isNaN(tempF)) {
+         tempF = tempF * 9/5 + 32; // Convert C to F internally
+       }
+       const newReading = {
+          id: Date.now().toString(),
+          date: Date.now(),
+          hr: parseInt(manualEntry.hr) || 75,
+          bpSys: parseInt(manualEntry.bpSys) || 120,
+          bpDia: parseInt(manualEntry.bpDia) || 80,
+          spo2: parseInt(manualEntry.spo2) || 98,
+          temp: tempF || 98.6
+       };
+       addVitalReading(newReading, 'Manual vitals added successfully.');
+       setShowManual(false);
+       setManualEntry({ hr: '', bpSys: '', bpDia: '', spo2: '', temp: '' });
+    };
+
+    const addVitalReading = (reading: any, speakMsg: string) => {
+       setVitalsHistory([reading, ...vitalsHistory]);
+       speakText(speakMsg);
+       
+       // Alert if risks
+       let risks = [];
+       if (reading.hr > 110 || reading.hr < 50) risks.push("Abnormal Heart Rate");
+       if (reading.bpSys > 140 || reading.bpDia > 90) risks.push("High Blood Pressure");
+       if (reading.spo2 < 94) risks.push("Low Blood Oxygen");
+       if (reading.temp > 100.4) risks.push("Fever Detected");
+       
+       if (risks.length > 0) {
+          triggerEmergency("Warning: " + risks.join(', '));
+       }
+    };
+
+    const displayTemp = (tempF: number) => {
+       if (tempUnit === 'F') return `${tempF.toFixed(1)}°F`;
+       return `${((tempF - 32) * 5/9).toFixed(1)}°C`;
     };
 
     return (
@@ -451,26 +750,61 @@ export default function App() {
                <Text style={{color: COLORS.textSub, marginTop: 24, fontSize: 16}}>{isScanning ? scanStage : "Place finger on sensor / Wearable ready"}</Text>
             </View>
 
-            <TouchableOpacity onPress={startScan} disabled={isScanning} style={[styles.heroButtonPrimary, {marginBottom: 24, opacity: isScanning ? 0.5 : 1}]}>
-               <Activity color="white" size={18} style={{marginRight:8}}/>
-               <Text style={styles.heroButtonText}>{isScanning ? "Scanning..." : "Start Bio-Scan"}</Text>
-            </TouchableOpacity>
+            <View style={styles.heroActionRow}>
+              <TouchableOpacity onPress={startScan} disabled={isScanning} style={[styles.heroButtonPrimary, {marginBottom: 24, opacity: isScanning ? 0.5 : 1}]}>
+                 <Activity color="white" size={18} style={{marginRight:8}}/>
+                 <Text style={styles.heroButtonText}>{isScanning ? "Scanning..." : "Start Scan"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowManual(!showManual)} style={[styles.heroButtonSecondary, {marginBottom: 24}]}>
+                 <Text style={[styles.heroButtonText, {color: COLORS.accent}]}>{showManual ? "Cancel Manual" : "Add Manual"}</Text>
+              </TouchableOpacity>
+            </View>
 
-            <Text style={[styles.cardHeader, { marginBottom: 12 }]}>Historic Scans</Text>
+            {showManual && (
+              <View style={{marginBottom: 20, backgroundColor: '#342E5E', padding: 12, borderRadius: 16}}>
+                 <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8}}>
+                    <TextInput style={[styles.input, {borderWidth:1, borderColor: '#555', borderRadius: 8, paddingHorizontal: 8, width: '48%', height: 40}]} placeholder="HR (bpm)" placeholderTextColor="#999" value={manualEntry.hr} onChangeText={t => setManualEntry({...manualEntry, hr: t})} keyboardType="numeric" />
+                    <TextInput style={[styles.input, {borderWidth:1, borderColor: '#555', borderRadius: 8, paddingHorizontal: 8, width: '48%', height: 40}]} placeholder="SpO2 (%)" placeholderTextColor="#999" value={manualEntry.spo2} onChangeText={t => setManualEntry({...manualEntry, spo2: t})} keyboardType="numeric" />
+                 </View>
+                 <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8}}>
+                    <TextInput style={[styles.input, {borderWidth:1, borderColor: '#555', borderRadius: 8, paddingHorizontal: 8, width: '48%', height: 40}]} placeholder="BP Sys (e.g. 120)" placeholderTextColor="#999" value={manualEntry.bpSys} onChangeText={t => setManualEntry({...manualEntry, bpSys: t})} keyboardType="numeric" />
+                    <TextInput style={[styles.input, {borderWidth:1, borderColor: '#555', borderRadius: 8, paddingHorizontal: 8, width: '48%', height: 40}]} placeholder="BP Dia (e.g. 80)" placeholderTextColor="#999" value={manualEntry.bpDia} onChangeText={t => setManualEntry({...manualEntry, bpDia: t})} keyboardType="numeric" />
+                 </View>
+                 <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <TextInput style={[styles.input, {borderWidth:1, borderColor: '#555', borderRadius: 8, paddingHorizontal: 8, width: '48%', height: 40}]} placeholder={`Temp (${tempUnit})`} placeholderTextColor="#999" value={manualEntry.temp} onChangeText={t => setManualEntry({...manualEntry, temp: t})} keyboardType="numeric" />
+                    <TouchableOpacity onPress={submitManual} style={[styles.heroButtonPrimary, {width: '48%', height: 40, paddingVertical: 0}]}>
+                       <Text style={styles.heroButtonText}>Save Vitals</Text>
+                    </TouchableOpacity>
+                 </View>
+              </View>
+            )}
+
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+               <Text style={styles.cardHeader}>Historic Scans</Text>
+               <TouchableOpacity onPress={() => setTempUnit(tempUnit === 'F' ? 'C' : 'F')} style={{backgroundColor: '#342E5E', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12}}>
+                 <Text style={{color: '#FFF', fontSize: 13}}>Temp Unit: {tempUnit}</Text>
+               </TouchableOpacity>
+            </View>
             <ScrollView style={{maxHeight: 200}}>
-               {vitalsHistory.map(scan => (
-                 <View key={scan.id} style={styles.vitalItem}>
+               {vitalsHistory.map(scan => {
+                 let isWarning = false;
+                 if (scan.hr > 110 || scan.hr < 50 || scan.bpSys > 140 || scan.bpDia > 90 || scan.spo2 < 94 || scan.temp > 100.4) isWarning = true;
+                 
+                 return (
+                 <View key={scan.id} style={[styles.vitalItem, isWarning && { borderColor: '#FF4B4B', borderWidth: 1 }]}>
                     <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6}}>
                        <Text style={{color: '#FFF', fontWeight: 'bold'}}>{new Date(scan.date).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}</Text>
-                       <Text style={{color: COLORS.online, fontWeight: '600'}}>Optimal</Text>
+                       <Text style={{color: isWarning ? '#FF4B4B' : COLORS.online, fontWeight: '600'}}>{isWarning ? 'Warning Risk' : 'Optimal'}</Text>
                     </View>
                     <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-                       <Text style={{color: COLORS.textSub}}>HR: <Text style={{color:'#FFF'}}>{scan.hr} bpm</Text></Text>
+                       <Text style={{color: COLORS.textSub}}>HR: <Text style={{color:'#FFF'}}>{scan.hr}</Text></Text>
                        <Text style={{color: COLORS.textSub}}>BP: <Text style={{color:'#FFF'}}>{scan.bpSys}/{scan.bpDia}</Text></Text>
                        <Text style={{color: COLORS.textSub}}>SpO2: <Text style={{color:'#FFF'}}>{scan.spo2}%</Text></Text>
+                       <Text style={{color: COLORS.textSub}}>Temp: <Text style={{color:'#FFF'}}>{displayTemp(scan.temp)}</Text></Text>
                     </View>
                  </View>
-               ))}
+                 );
+               })}
                {vitalsHistory.length === 0 && <Text style={{color: COLORS.textSub, textAlign:'center', marginTop:20}}>No scans recorded yet.</Text>}
             </ScrollView>
 
@@ -481,54 +815,138 @@ export default function App() {
   };
 
   const ActivityModal = () => {
+    // Merge existing activityData with new fields to avoid undefined errors
+    const data = {
+      steps: activityData.steps || 0,
+      activeMinutes: activityData.activeMinutes || 0,
+      calories: activityData.calories || 0,
+      sleep: (activityData as any).sleep || 7.5,
+      stress: (activityData as any).stress || 'Low',
+      screenTime: (activityData as any).screenTime || 4.2,
+      cycle: (activityData as any).cycle || 'Day 14',
+      mood: (activityData as any).mood || 'Good',
+      energy: (activityData as any).energy || 80
+    };
+
     const addActivity = (type: 'walk' | 'run') => {
        const steps = type === 'walk' ? 1200 : 2500;
        const mins = type === 'walk' ? 15 : 20;
        const cals = type === 'walk' ? 60 : 150;
        setActivityData({
-         steps: activityData.steps + steps,
-         activeMinutes: activityData.activeMinutes + mins,
-         calories: activityData.calories + cals
+         ...data,
+         steps: data.steps + steps,
+         activeMinutes: data.activeMinutes + mins,
+         calories: data.calories + cals
        });
        speakText(`Great job! You have logged a ${type}.`);
+    };
+
+    const logMetric = (metric: string, val: any) => {
+       setActivityData({ ...data, [metric]: val });
     };
 
     return (
       <Modal visible={activeModal === 'activity'} animationType="slide" transparent>
         <View style={styles.modalBg}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { maxHeight: '85%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Daily Activity</Text>
+              <Text style={styles.modalTitle}>Comprehensive Health</Text>
               <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
             </View>
 
-            <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24}}>
-               <View style={styles.statBox}>
-                  <Navigation color={COLORS.accent} size={24} style={{marginBottom:8}}/>
-                  <Text style={styles.statValue}>{activityData.steps}</Text>
-                  <Text style={styles.statLabel}>Steps</Text>
-               </View>
-               <View style={styles.statBox}>
-                  <Activity color={COLORS.online} size={24} style={{marginBottom:8}}/>
-                  <Text style={styles.statValue}>{activityData.activeMinutes}</Text>
-                  <Text style={styles.statLabel}>Active Mins</Text>
-               </View>
-               <View style={styles.statBox}>
-                  <Flame color="#FF9800" size={24} style={{marginBottom:8}}/>
-                  <Text style={styles.statValue}>{activityData.calories}</Text>
-                  <Text style={styles.statLabel}>Calories</Text>
-               </View>
-            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={[styles.cardHeader, {marginBottom: 12}]}>Physical Activity</Text>
+              <View style={{flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16}}>
+                 <View style={styles.statBox}>
+                    <Navigation color={COLORS.accent} size={24} style={{marginBottom:8}}/>
+                    <Text style={styles.statValue}>{data.steps}</Text>
+                    <Text style={styles.statLabel}>Steps</Text>
+                 </View>
+                 <View style={styles.statBox}>
+                    <Activity color={COLORS.online} size={24} style={{marginBottom:8}}/>
+                    <Text style={styles.statValue}>{data.activeMinutes}</Text>
+                    <Text style={styles.statLabel}>Active Mins</Text>
+                 </View>
+                 <View style={styles.statBox}>
+                    <Flame color="#FF9800" size={24} style={{marginBottom:8}}/>
+                    <Text style={styles.statValue}>{data.calories}</Text>
+                    <Text style={styles.statLabel}>Calories</Text>
+                 </View>
+              </View>
 
-            <Text style={[styles.cardHeader, { marginBottom: 12 }]}>Physical Action Simulator</Text>
-            <View style={{flexDirection: 'row', gap: 12}}>
-               <TouchableOpacity onPress={() => addActivity('walk')} style={styles.heroButtonSecondary}>
-                  <Text style={[styles.heroButtonText, {color: COLORS.accent}]}>+ Brisk Walk</Text>
-               </TouchableOpacity>
-               <TouchableOpacity onPress={() => addActivity('run')} style={styles.heroButtonPrimary}>
-                  <Text style={styles.heroButtonText}>+ Run</Text>
-               </TouchableOpacity>
-            </View>
+              <View style={{flexDirection: 'row', gap: 12}}>
+                 <TouchableOpacity onPress={() => addActivity('walk')} style={styles.heroButtonSecondary}>
+                    <Text style={[styles.heroButtonText, {color: COLORS.accent}]}>+ Brisk Walk</Text>
+                 </TouchableOpacity>
+                 <TouchableOpacity onPress={() => addActivity('run')} style={styles.heroButtonPrimary}>
+                    <Text style={styles.heroButtonText}>+ Run</Text>
+                 </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.cardHeader, {marginTop: 24, marginBottom: 12}]}>Wellness & Tracking</Text>
+              
+              <View style={[styles.vitalItem, {marginBottom: 8}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Sleep (hrs)</Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <TouchableOpacity onPress={() => logMetric('sleep', Math.max(0, data.sleep - 0.5))}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>-</Text></TouchableOpacity>
+                    <Text style={{color: '#FFF', fontSize: 16, width: 40, textAlign: 'center'}}>{data.sleep}</Text>
+                    <TouchableOpacity onPress={() => logMetric('sleep', data.sleep + 0.5)}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>+</Text></TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.vitalItem, {marginBottom: 8}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Energy (%)</Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <TouchableOpacity onPress={() => logMetric('energy', Math.max(0, data.energy - 10))}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>-</Text></TouchableOpacity>
+                    <Text style={{color: '#FFF', fontSize: 16, width: 40, textAlign: 'center'}}>{data.energy}</Text>
+                    <TouchableOpacity onPress={() => logMetric('energy', Math.min(100, data.energy + 10))}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>+</Text></TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.vitalItem, {marginBottom: 8}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Stress Level</Text>
+                  <TouchableOpacity onPress={() => logMetric('stress', data.stress === 'Low' ? 'Medium' : data.stress === 'Medium' ? 'High' : 'Low')} style={{backgroundColor: '#342E5E', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12}}>
+                    <Text style={{color: data.stress === 'High' ? '#FF4B4B' : '#FFF'}}>{data.stress}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={[styles.vitalItem, {marginBottom: 8}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Mental Health</Text>
+                  <TouchableOpacity onPress={() => logMetric('mood', data.mood === 'Good' ? 'Okay' : data.mood === 'Okay' ? 'Bad' : 'Good')} style={{backgroundColor: '#342E5E', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12}}>
+                    <Text style={{color: '#FFF'}}>{data.mood}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View style={[styles.vitalItem, {marginBottom: 8}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Menstrual Cycle</Text>
+                  <TextInput 
+                     style={{backgroundColor: '#342E5E', color: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, width: 100, textAlign: 'center'}}
+                     value={data.cycle}
+                     onChangeText={t => logMetric('cycle', t)}
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.vitalItem, {marginBottom: 20}]}>
+                <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <Text style={{color: '#FFF', fontSize: 16}}>Screen Time (hrs)</Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <TouchableOpacity onPress={() => logMetric('screenTime', Math.max(0, data.screenTime - 0.5))}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>-</Text></TouchableOpacity>
+                    <Text style={{color: '#FFF', fontSize: 16, width: 40, textAlign: 'center'}}>{data.screenTime}</Text>
+                    <TouchableOpacity onPress={() => logMetric('screenTime', data.screenTime + 0.5)}><Text style={{color: COLORS.accent, fontSize: 24, paddingHorizontal: 10}}>+</Text></TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -665,6 +1083,8 @@ Keep it encouraging and brief.`;
     <View style={styles.container}>
       <Header />
       <MenuOverlay />
+      <EmergencyAlertModal />
+      <EmergencySettingsModal />
       <LiquidModal />
       <PlanModal />
       <VitalsModal />
@@ -679,7 +1099,14 @@ Keep it encouraging and brief.`;
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => (
           <View style={[styles.bubble, item.fromUser ? styles.userBubble : styles.ogooBubble]}>
-            <Text style={styles.bubbleText}>{item.text}</Text>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
+              <Text style={[styles.bubbleText, { flex: 1 }]}>{item.text}</Text>
+              {!item.fromUser && (
+                <TouchableOpacity onPress={() => speakText(item.text)} style={{ marginLeft: 10, marginTop: 2 }}>
+                  <Volume2 color={COLORS.accent} size={18} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         )}
         contentContainerStyle={styles.listPadding}

@@ -25,7 +25,6 @@
       "package": "com.devekene.ogoobot"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
