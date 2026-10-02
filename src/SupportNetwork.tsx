@@ -1514,6 +1514,16 @@ export const SupportNetworkPage: React.FC<SupportNetworkProps> = ({ onBack, onAs
               </View>
             </View>
 
+            {/* Specialist Legal Responsibility Notice */}
+            <View style={styles.tabDisclaimerCard}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <ShieldCheck color="#fbbf24" size={15} style={{ marginTop: 2, marginRight: 8 }} />
+                <Text style={styles.tabDisclaimerText}>
+                  <Text style={{ fontWeight: 'bold', color: '#fbbf24' }}>Important Notice:</Text> Specialists in this directory are independent third-party practitioners. Any clinical advice, recommendations, diagnoses, or consultation schedules provided by experts are solely their own and are not the legal responsibility of, related to, or endorsed by Ogoo.
+                </Text>
+              </View>
+            </View>
+
             {experts.map(expert => (
               <View key={expert.id} style={styles.expertCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
@@ -1748,6 +1758,13 @@ export const SupportNetworkPage: React.FC<SupportNetworkProps> = ({ onBack, onAs
             ))}
           </View>
         )}
+
+        {/* Support Network Persistent Bottom Disclaimer */}
+        <View style={styles.bottomDisclaimer}>
+          <Text style={styles.bottomDisclaimerText}>
+            ⚠️ Disclaimer: Experts, specialists, peer, circle members, and all advice, opinions, or recommendations shared in the Support Network are independent community and third-party contributions and are not guaranteed by us or related to Ogoo. Ogoo is not a medical practice and assumes no liability for actions taken based on any community or specialist guidance, consultations, or interactions here. Always attend a licenced medical practice or hospital for professional clinical advice, diagnoses, treatment, and medical emergencies.
+          </Text>
+        </View>
       </ScrollView>
 
       {/* MODAL 1: CREATE NEW SOCIAL POST / STORY */}
@@ -2064,6 +2081,12 @@ export const SupportNetworkPage: React.FC<SupportNetworkProps> = ({ onBack, onAs
               multiline
             />
 
+            <View style={styles.modalDisclaimerBox}>
+              <Text style={styles.modalDisclaimerText}>
+                ⚠️ Disclaimer: Telehealth consultations and expert advice are conducted independently by the specialist and are not our legal responsibility or related to Ogoo.
+              </Text>
+            </View>
+
             <TouchableOpacity
               onPress={handleConfirmBooking}
               style={styles.publishSubmitBtn}
@@ -2082,6 +2105,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.bg,
+  },
+  tabDisclaimerCard: {
+    backgroundColor: 'rgba(251, 191, 36, 0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 14,
+  },
+  tabDisclaimerText: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
+    lineHeight: 15,
+    flex: 1,
+  },
+  bottomDisclaimer: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 28,
+    alignItems: 'center',
+  },
+  bottomDisclaimerText: {
+    color: '#a78bfa',
+    fontSize: 10.5,
+    lineHeight: 14.5,
+    textAlign: 'center',
+  },
+  bottomLegalDisclaimer: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 28,
+    alignItems: 'center',
+  },
+  bottomLegalDisclaimerText: {
+    color: '#a78bfa',
+    fontSize: 10.5,
+    lineHeight: 14.5,
+    textAlign: 'center',
+  },
+  modalDisclaimerBox: {
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.25)',
+    borderRadius: 8,
+    padding: 8,
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  modalDisclaimerText: {
+    color: '#fef3c7',
+    fontSize: 10,
+    lineHeight: 14,
   },
   header: {
     flexDirection: 'row',

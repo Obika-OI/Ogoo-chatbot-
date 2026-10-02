@@ -646,11 +646,11 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
             ))
           )}
 
-          {/* Privacy Note */}
+          {/* Privacy & Legal Disclaimer Note */}
           <View style={styles.privacyNoteBox}>
-            <Sparkles color={COLORS.accent} size={14} style={{ marginRight: 8 }} />
+            <Sparkles color="#fbbf24" size={14} style={{ marginRight: 8 }} />
             <Text style={styles.privacyNoteText}>
-              All direct messages and simulated peer/clinical responses are stored securely in local browser storage without 3rd-party tracking.
+              ⚠️ Legal Disclaimer: Experts, peers, and advice across the Support Network are independent and not our legal responsibility or related to Ogoo. Messages are stored locally on your device.
             </Text>
           </View>
         </ScrollView>
@@ -661,37 +661,67 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
             <View style={styles.modalContentBox}>
               <View style={styles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MessageSquare color={COLORS.accent} size={20} style={{ marginRight: 8 }} />
-                  <Text style={styles.modalTitle}>New Conversation</Text>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#5c1794', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                    <MessageSquare color="#FFF" size={18} />
+                  </View>
+                  <View>
+                    <Text style={styles.modalTitle}>Choose Who to Message</Text>
+                    <Text style={{ color: COLORS.textSub, fontSize: 12 }}>Pick a specialist or peer</Text>
+                  </View>
                 </View>
-                <TouchableOpacity onPress={() => setShowNewChatModal(false)}>
-                  <X color="#FFF" size={22} />
+                <TouchableOpacity
+                  onPress={() => setShowNewChatModal(false)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#dc2626',
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    borderRadius: 22,
+                    minHeight: 44,
+                    minWidth: 84,
+                    borderWidth: 1.5,
+                    borderColor: '#fca5a5',
+                    shadowColor: '#dc2626',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 4,
+                    elevation: 4,
+                  }}
+                  accessibilityLabel="Close"
+                >
+                  <X color="#FFF" size={18} style={{ marginRight: 4 }} />
+                  <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '800' }}>Close</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={{ color: COLORS.textSub, fontSize: 13, marginBottom: 14 }}>
-                Choose a clinical specialist or peer member to begin a direct conversation:
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 12 }}>
+                Tap on any doctor or peer below to start your conversation:
               </Text>
 
-              <ScrollView style={{ maxHeight: 380 }}>
+              <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false}>
                 <Text style={styles.pickerSectionTitle}>🩺 Verified Specialists & Clinicians</Text>
                 {experts.map(exp => (
                   <TouchableOpacity
                     key={exp.id}
                     onPress={() => handleStartChatWith('expert', exp)}
                     style={styles.pickerItemCard}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.pickerAvatarBox}>
-                      <Stethoscope color={COLORS.accent} size={18} />
+                      <Stethoscope color={COLORS.accent} size={20} />
                     </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text style={styles.pickerItemName}>{exp.name}</Text>
-                        <ShieldCheck color="#00C864" size={14} style={{ marginLeft: 4 }} />
+                        <ShieldCheck color="#00C864" size={15} style={{ marginLeft: 5 }} />
                       </View>
                       <Text style={styles.pickerItemSub}>{exp.specialty}</Text>
                     </View>
-                    <Text style={styles.pickerStartText}>Message →</Text>
+                    <View style={{ backgroundColor: '#5c1794', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Chat →</Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
 
@@ -701,17 +731,20 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
                     key={p.id}
                     onPress={() => handleStartChatWith('peer', p)}
                     style={styles.pickerItemCard}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.pickerAvatarBox}>
-                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 12 }}>
+                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>
                         {p.name.split(' ').map((n: string) => n[0]).join('')}
                       </Text>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={styles.pickerItemName}>{p.name}</Text>
                       <Text style={styles.pickerItemSub}>{p.struggle}</Text>
                     </View>
-                    <Text style={styles.pickerStartText}>Message →</Text>
+                    <View style={{ backgroundColor: '#7c3aed', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                      <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Chat →</Text>
+                    </View>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -778,10 +811,10 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
         </View>
       </View>
 
-      {/* Security Banner */}
+      {/* Security & Legal Responsibility Banner */}
       <View style={styles.securityBanner}>
         <Text style={styles.securityBannerText}>
-          🔒 Private 1-on-1 Consultation • Client-side simulation & local persistence
+          ⚠️ Legal Notice: Advice and messages from experts and peers in this chat are independent community exchanges and are not our legal responsibility or related to Ogoo. Always consult a certified doctor for medical treatment.
         </Text>
       </View>
 
@@ -935,16 +968,43 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
           <View style={styles.modalContentBox}>
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Activity color={COLORS.accent} size={20} style={{ marginRight: 8 }} />
-                <Text style={styles.modalTitle}>Share Health Data Snapshot</Text>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#7c3aed', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <Activity color="#FFF" size={18} />
+                </View>
+                <View>
+                  <Text style={styles.modalTitle}>Share Health Numbers</Text>
+                  <Text style={{ color: COLORS.textSub, fontSize: 12 }}>1-tap easy sharing</Text>
+                </View>
               </View>
-              <TouchableOpacity onPress={() => setShowShareVitalsModal(false)}>
-                <X color="#FFF" size={22} />
+              <TouchableOpacity
+                onPress={() => setShowShareVitalsModal(false)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: '#dc2626',
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 22,
+                  minHeight: 44,
+                  minWidth: 84,
+                  borderWidth: 1.5,
+                  borderColor: '#fca5a5',
+                  shadowColor: '#dc2626',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 4,
+                  elevation: 4,
+                }}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} style={{ marginRight: 4 }} />
+                <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '800' }}>Close</Text>
               </TouchableOpacity>
             </View>
 
-            <Text style={{ color: COLORS.textSub, fontSize: 13, marginBottom: 14 }}>
-              Select recent tracking metrics from your Ogoo health record to share directly into this conversation:
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, marginBottom: 14 }}>
+              Tap any card below to share your record into this chat:
             </Text>
 
             <TouchableOpacity
@@ -960,14 +1020,19 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
                 });
                 setShowShareVitalsModal(false);
               }}
-              style={styles.vitalsShareOptionCard}
+              style={[styles.vitalsShareOptionCard, { paddingVertical: 14 }]}
+              activeOpacity={0.7}
             >
-              <Heart color="#e572a3" size={22} style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vitalsShareOptionTitle}>Blood Pressure & Heart Rate</Text>
-                <Text style={styles.vitalsShareOptionSub}>118/76 mmHg • 70 BPM resting • Optimal</Text>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(229, 114, 163, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Heart color="#e572a3" size={24} />
               </View>
-              <Text style={styles.vitalsShareSendText}>Share →</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>Blood Pressure & Pulse</Text>
+                <Text style={{ color: '#d8b4fe', fontSize: 12, marginTop: 2 }}>118/76 mmHg • 70 BPM resting (Optimal)</Text>
+              </View>
+              <View style={{ backgroundColor: '#5c1794', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Send →</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -983,14 +1048,19 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
                 });
                 setShowShareVitalsModal(false);
               }}
-              style={styles.vitalsShareOptionCard}
+              style={[styles.vitalsShareOptionCard, { paddingVertical: 14 }]}
+              activeOpacity={0.7}
             >
-              <Flame color="#fbbf24" size={22} style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vitalsShareOptionTitle}>Activity & Hydration Goals</Text>
-                <Text style={styles.vitalsShareOptionSub}>10,240 steps • 2.5L water • 14-day streak</Text>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(251, 191, 36, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Flame color="#fbbf24" size={24} />
               </View>
-              <Text style={styles.vitalsShareSendText}>Share →</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>Daily Steps & Water Drank</Text>
+                <Text style={{ color: '#d8b4fe', fontSize: 12, marginTop: 2 }}>10,240 steps • 2.5L water • 14 days in a row</Text>
+              </View>
+              <View style={{ backgroundColor: '#5c1794', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Send →</Text>
+              </View>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1006,14 +1076,19 @@ export const SupportMessagingView: React.FC<SupportMessagingViewProps> = ({
                 });
                 setShowShareVitalsModal(false);
               }}
-              style={styles.vitalsShareOptionCard}
+              style={[styles.vitalsShareOptionCard, { paddingVertical: 14 }]}
+              activeOpacity={0.7}
             >
-              <Clock color="#d8b4fe" size={22} style={{ marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.vitalsShareOptionTitle}>Timed Schedule & Adherence</Text>
-                <Text style={styles.vitalsShareOptionSub}>98% adherence • Waking-hour timing</Text>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(167, 139, 250, 0.2)', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                <Clock color="#d8b4fe" size={24} />
               </View>
-              <Text style={styles.vitalsShareSendText}>Share →</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>Medicine On-Time Record</Text>
+                <Text style={{ color: '#d8b4fe', fontSize: 12, marginTop: 2 }}>98% on-time • Doses safe from double-dosing</Text>
+              </View>
+              <View style={{ backgroundColor: '#5c1794', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 }}>
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: 'bold' }}>Send →</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -1319,15 +1394,19 @@ const styles = StyleSheet.create({
     borderRadius: 8
   },
   securityBanner: {
-    backgroundColor: 'rgba(0, 200, 100, 0.08)',
-    paddingVertical: 4,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(251, 191, 36, 0.25)',
+    paddingVertical: 6,
     paddingHorizontal: 14,
     alignItems: 'center'
   },
   securityBannerText: {
-    color: '#00C864',
+    color: '#fbbf24',
     fontSize: 10,
-    fontWeight: '600'
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 14
   },
   chatMessagesArea: {
     flex: 1,
@@ -1498,93 +1577,107 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(5, 0, 14, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16
   },
   modalContentBox: {
-    backgroundColor: '#25083f',
+    backgroundColor: '#1b0730',
     width: '100%',
-    maxWidth: 480,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: '#5c1794'
+    maxWidth: 520,
+    maxHeight: '92%',
+    borderRadius: 24,
+    padding: 22,
+    borderWidth: 2,
+    borderColor: '#a855f7',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12
+    marginBottom: 16,
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
+    paddingBottom: 14,
   },
   modalTitle: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800'
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   pickerSectionTitle: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700',
-    marginBottom: 8
+    color: '#d8b4fe',
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 12,
+    marginBottom: 10
   },
   pickerItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: COLORS.border
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 12,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.14)',
+    minHeight: 56,
   },
   pickerAvatarBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: COLORS.deepViolet,
     alignItems: 'center',
     justifyContent: 'center'
   },
   pickerItemName: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700'
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800'
   },
   pickerItemSub: {
-    color: COLORS.textSub,
-    fontSize: 11
+    color: '#e9d5ff',
+    fontSize: 13,
+    marginTop: 2
   },
   pickerStartText: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700'
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800'
   },
   vitalsShareOptionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 14,
+    borderRadius: 14,
     marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.16)',
+    minHeight: 58,
   },
   vitalsShareOptionTitle: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700'
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800'
   },
   vitalsShareOptionSub: {
-    color: COLORS.textSub,
-    fontSize: 11,
+    color: '#e9d5ff',
+    fontSize: 13,
     marginTop: 2
   },
   vitalsShareSendText: {
-    color: COLORS.accent,
-    fontSize: 12,
-    fontWeight: '700'
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800'
   }
 });
 

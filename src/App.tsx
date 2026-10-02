@@ -1092,8 +1092,23 @@ export default function App() {
              <Text style={{color: '#FFF', textAlign: 'center', marginVertical: 16, fontSize: 18}}>{emergencyMode.reason}</Text>
              <Text style={{color: '#FFF', textAlign: 'center', fontSize: 56, fontWeight: 'bold'}}>{countdown}</Text>
              <Text style={{color: '#FFF', textAlign: 'center', marginVertical: 16, fontSize: 16}}>Calling {emergencyInfo.name || 'Emergency Services'} in {countdown}s...</Text>
-             <TouchableOpacity onPress={cancelEmergency} style={[styles.heroButtonSecondary, { borderColor: '#FFF', marginTop: 20 }]}>
-               <Text style={[styles.heroButtonText, {color: '#FFF'}]}>Cancel</Text>
+             <TouchableOpacity
+               onPress={cancelEmergency}
+               style={{
+                 backgroundColor: '#FFF',
+                 paddingVertical: 18,
+                 borderRadius: 16,
+                 marginTop: 20,
+                 alignItems: 'center',
+                 borderWidth: 2,
+                 borderColor: '#FF4B4B',
+                 minHeight: 56
+               }}
+               activeOpacity={0.8}
+             >
+               <Text style={{ color: '#FF4B4B', fontSize: 20, fontWeight: '900' }}>
+                 🛑 STOP / CANCEL CALL
+               </Text>
              </TouchableOpacity>
           </View>
         </View>
@@ -1285,7 +1300,14 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
                 <ShieldAlert color={COLORS.accent} size={22} style={{marginRight: 8}}/>
                 <Text style={styles.modalTitle}>Medical ID and Care team</Text>
               </View>
-              <TouchableOpacity onPress={() => setShowEmergencySettings(false)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowEmergencySettings(false)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Quick Actions Bar */}
@@ -1728,8 +1750,9 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
         <View style={styles.menuContent}>
           <View style={styles.menuHeader}>
             <Text style={styles.menuTitle}>Profile & Settings</Text>
-            <TouchableOpacity onPress={() => setShowMenu(false)} style={styles.closeButton}>
-              <X color={COLORS.textMain} size={24} />
+            <TouchableOpacity onPress={() => setShowMenu(false)} style={styles.modalCloseBtnPill} accessibilityLabel="Close">
+              <X color="#FFF" size={18} />
+              <Text style={styles.modalCloseBtnText}>Close</Text>
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -1822,9 +1845,22 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Adaptive Hydration & Electrolytes</Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Droplet color="#38bdf8" size={22} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Drink Water & Liquids</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
+            <Text style={styles.modalSimpleSubtitle}>
+              Tap a cup or bottle below to record your water for today.
+            </Text>
             
             {/* Adaptive Environment & Medical Adjustments Bar */}
             <View style={{ backgroundColor: 'rgba(255,255,255,0.04)', padding: 12, borderRadius: 14, marginBottom: 12, borderWidth: 1, borderColor: COLORS.borderSubtle }}>
@@ -1887,28 +1923,28 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
               </View>
             )}
 
-            <View style={styles.heroActionRow}>
-               <TouchableOpacity onPress={() => addLiquid(250)} style={styles.heroButtonPrimary}>
-                  <Droplet color="white" size={16} style={{marginRight:8}}/>
-                  <Text style={styles.heroButtonText}>+250ml Glass</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+               <TouchableOpacity onPress={() => addLiquid(250)} style={[styles.quickPresetCardBig, { flex: 1, backgroundColor: 'rgba(56, 189, 248, 0.18)', borderColor: '#38bdf8' }]}>
+                  <Droplet color="#38bdf8" size={18} style={{marginRight: 6}}/>
+                  <Text style={[styles.quickPresetCardBigText, { color: '#FFFFFF', fontSize: 13 }]}>+1 Cup (250ml) 🥛</Text>
                </TouchableOpacity>
-               <TouchableOpacity onPress={() => addLiquid(500)} style={styles.heroButtonSecondary}>
-                  <Droplet color={COLORS.accent} size={16} style={{marginRight:8}}/>
-                  <Text style={[styles.heroButtonText, {color: COLORS.accent}]}>+500ml Bottle</Text>
+               <TouchableOpacity onPress={() => addLiquid(500)} style={[styles.quickPresetCardBig, { flex: 1, backgroundColor: 'rgba(168, 85, 247, 0.18)', borderColor: '#a855f7' }]}>
+                  <Droplet color="#a855f7" size={18} style={{marginRight: 6}}/>
+                  <Text style={[styles.quickPresetCardBigText, { color: '#FFFFFF', fontSize: 13 }]}>+Bottle (500ml) 🍼</Text>
                </TouchableOpacity>
             </View>
 
-            <View style={{flexDirection: 'row', marginTop: 12, marginBottom: 8}}>
+            <View style={{flexDirection: 'row', marginTop: 6, marginBottom: 12}}>
               <TextInput
-                style={[styles.input, {flex: 1, borderWidth: 1, borderColor: '#5c1794', borderRadius: 12, paddingHorizontal: 12, marginRight: 8, height: 40}]}
-                placeholder="Custom amount (ml)"
-                placeholderTextColor={COLORS.textSub}
+                style={[styles.input, {flex: 1, borderWidth: 1.5, borderColor: '#a855f7', borderRadius: 12, paddingHorizontal: 14, marginRight: 8, height: 48, fontSize: 14}]}
+                placeholder="Or type custom amount in ml..."
+                placeholderTextColor="rgba(255,255,255,0.4)"
                 keyboardType="numeric"
                 value={customAmount}
                 onChangeText={setCustomAmount}
               />
-              <TouchableOpacity onPress={() => addLiquid(parseInt(customAmount) || 0)} style={[styles.sendButton, {backgroundColor: COLORS.deepViolet, borderRadius: 12}]}>
-                <Plus color="#FFF" size={18} />
+              <TouchableOpacity onPress={() => addLiquid(parseInt(customAmount) || 0)} style={[styles.sendButton, {backgroundColor: COLORS.deepViolet, borderRadius: 12, width: 48, height: 48}]}>
+                <Plus color="#FFF" size={20} />
               </TouchableOpacity>
             </View>
 
@@ -1965,36 +2001,83 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
         <View style={styles.modalBg}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Nutrition Tracker</Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
-            </View>
-
-            <View style={{alignItems: 'center', marginVertical: 20}}>
-              <View style={[styles.iconCircle, { width: 80, height: 80, borderRadius: 40, backgroundColor: '#5c1794' }]}>
-                 <Flame color={COLORS.accent} size={40} />
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Flame color="#fb923c" size={22} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Food & Meals</Text>
               </View>
-              <Text style={{color: '#FFF', fontSize: 32, fontWeight: '700', marginTop: 12}}>{totalCalories}</Text>
-              <Text style={{color: COLORS.textSub}}>kcal recorded today</Text>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.modalSimpleSubtitle}>
+              Record what you ate today to track your meals and daily energy.
+            </Text>
+
+            <View style={{alignItems: 'center', marginVertical: 14}}>
+              <View style={[styles.iconCircle, { width: 72, height: 72, borderRadius: 36, backgroundColor: '#5c1794' }]}>
+                 <Flame color={COLORS.accent} size={36} />
+              </View>
+              <Text style={{color: '#FFF', fontSize: 32, fontWeight: '800', marginTop: 8}}>{totalCalories}</Text>
+              <Text style={{color: '#f3e8ff', fontSize: 13, fontWeight: '500'}}>calories eaten today</Text>
             </View>
 
-            <View style={{flexDirection: 'row', marginBottom: 20}}>
+            {/* Quick 1-Tap Meal Presets */}
+            <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800', marginBottom: 8 }}>
+              ⚡ 1-Tap Easy Meal Log:
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {[
+                { name: 'Breakfast 🍳', kcal: 350 },
+                { name: 'Lunch 🥗', kcal: 500 },
+                { name: 'Dinner 🍲', kcal: 600 },
+                { name: 'Fruit Snack 🍎', kcal: 150 },
+                { name: 'Warm Soup 🥣', kcal: 200 },
+              ].map(preset => (
+                <TouchableOpacity
+                  key={preset.name}
+                  onPress={() => {
+                    const newLog = { id: Date.now().toString(), meal: preset.name, calories: preset.kcal, time: Date.now() };
+                    setNutritionLogs([newLog, ...nutritionLogs]);
+                  }}
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 12,
+                    borderWidth: 1.5,
+                    borderColor: '#a855f7',
+                  }}
+                >
+                  <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700' }}>
+                    + {preset.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={{flexDirection: 'row', marginBottom: 16}}>
                <TextInput 
-                  style={[styles.input, {flex: 2, marginRight: 10, borderWidth: 1, borderColor: '#5c1794', borderRadius: 12, paddingHorizontal: 12, height: 44}]} 
-                  placeholder="Meal item (e.g. Oatmeal)"
-                  placeholderTextColor={COLORS.textSub}
+                  style={[styles.input, {flex: 2, marginRight: 8, borderWidth: 1.5, borderColor: '#a855f7', borderRadius: 12, paddingHorizontal: 12, height: 48, fontSize: 14}]} 
+                  placeholder="Or type custom meal (e.g. Oatmeal)"
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   value={meal}
                   onChangeText={setMeal}
                />
                <TextInput 
-                  style={[styles.input, {flex: 1, marginRight: 10, borderWidth: 1, borderColor: '#5c1794', borderRadius: 12, paddingHorizontal: 12, height: 44}]} 
+                  style={[styles.input, {flex: 1, marginRight: 8, borderWidth: 1.5, borderColor: '#a855f7', borderRadius: 12, paddingHorizontal: 12, height: 48, fontSize: 14}]} 
                   placeholder="kcal"
-                  placeholderTextColor={COLORS.textSub}
+                  placeholderTextColor="rgba(255,255,255,0.4)"
                   keyboardType="numeric"
                   value={calories}
                   onChangeText={setCalories}
                />
-               <TouchableOpacity onPress={addMeal} style={[styles.sendButton, {backgroundColor: COLORS.deepViolet, borderRadius: 12}]}>
-                  <Plus color="#FFF" size={18}/>
+               <TouchableOpacity onPress={addMeal} style={[styles.sendButton, {backgroundColor: COLORS.deepViolet, borderRadius: 12, width: 48, height: 48}]}>
+                  <Plus color="#FFF" size={20}/>
                </TouchableOpacity>
             </View>
 
@@ -2091,9 +2174,22 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
         <View style={styles.modalBg}>
           <View style={[styles.modalContent, { maxHeight: '88%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Vitals & Bio-Metrics</Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Activity color="#f43f5e" size={22} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Health Numbers & Vitals</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
+            <Text style={styles.modalSimpleSubtitle}>
+              Record your pulse, blood pressure, oxygen, and daily health numbers.
+            </Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Wearables & Sensor Sync Hub */}
@@ -2371,9 +2467,22 @@ Emergency Dispatch: ${emergencyInfo.countryCode || '911'}`;
         <View style={styles.modalBg}>
           <View style={[styles.modalContent, { maxHeight: '88%' }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Activity & Wellness</Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Activity color="#a855f7" size={22} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>Steps & Daily Activity</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
+            <Text style={styles.modalSimpleSubtitle}>
+              Keep track of your daily walking steps, exercises, and daily energy.
+            </Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Spoon Theory Energy Accounting & Pacing */}
@@ -2897,12 +3006,19 @@ Please format concisely with three focused recommendations:
       <Modal visible={activeModal === 'myplan'} animationType="slide" transparent>
         <View style={styles.modalBg}>
           <View style={[styles.modalContent, { padding: 0, maxHeight: '92%' }]}>
-            <View style={[styles.modalHeader, { padding: 18, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#5c1794', marginBottom: 0 }]}>
+            <View style={[styles.modalHeader, { padding: 16, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.12)', marginBottom: 0 }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Calendar color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
-                <Text style={styles.modalTitle}>Health Plan & Timed Schedule</Text>
+                <Text style={styles.modalTitle}>Daily Plan & Medicine</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Top Navigation Tabs */}
@@ -3753,9 +3869,22 @@ Please format concisely with three focused recommendations:
         <View style={styles.modalBg}>
           <View style={[styles.modalContent, {maxHeight: '85%'}]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Medical documents</Text>
-              <TouchableOpacity onPress={() => setActiveModal(null)}><X color="#FFF" size={24}/></TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <FileText color="#38bdf8" size={22} style={{ marginRight: 8 }} />
+                <Text style={styles.modalTitle}>My Health Documents</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
+              </TouchableOpacity>
             </View>
+            <Text style={styles.modalSimpleSubtitle}>
+              Safely store your doctor notes, medical photos, and lab results.
+            </Text>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.cardSub}>Keep track of medical records, care plans, test results, and health directives.</Text>
 
@@ -3906,8 +4035,13 @@ Please format concisely with three focused recommendations:
                 <ShieldAlert color="#FF4B4B" size={24} style={{ marginRight: 8 }} />
                 <Text style={[styles.modalTitle, { color: '#FF4B4B', fontSize: 18 }]}>CLINICAL SAFETY WARNING</Text>
               </View>
-              <TouchableOpacity onPress={() => { setShowRedFlagTriageModal(false); if(activeModal==='triageWarning') setActiveModal(null); }}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => { setShowRedFlagTriageModal(false); if(activeModal==='triageWarning') setActiveModal(null); }}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4015,8 +4149,13 @@ Please format concisely with three focused recommendations:
                 <Sparkles color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Multimodal Clinical Scanner</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4126,8 +4265,13 @@ Please format concisely with three focused recommendations:
                 <Pill color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Drug Interaction Safety</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4175,8 +4319,13 @@ Please format concisely with three focused recommendations:
                 <ShieldAlert color="#FF4B4B" size={22} style={{ marginRight: 8 }} />
                 <Text style={[styles.modalTitle, { color: '#FF4B4B' }]}>FIRST RESPONDER EMERGENCY SUMMARY</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4230,8 +4379,13 @@ Please format concisely with three focused recommendations:
                 <FileText color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Doctor Visit Assistant</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4282,8 +4436,13 @@ Please format concisely with three focused recommendations:
                 <ShieldAlert color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Passive Safety Net</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4382,8 +4541,13 @@ Please format concisely with three focused recommendations:
                 <Pill color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Complex Dosing & Safety Locks</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4514,8 +4678,13 @@ Please format concisely with three focused recommendations:
                 <Activity color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Functional Capacity & Independence</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4595,8 +4764,13 @@ Please format concisely with three focused recommendations:
                 <Bell color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Context Reminders & Pharmacy Sync</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4685,8 +4859,13 @@ Please format concisely with three focused recommendations:
                 <Sparkles color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Predictive Trend Analysis</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -4890,8 +5069,13 @@ Please format concisely with three focused recommendations:
                 <Clock color={COLORS.accent} size={22} style={{ marginRight: 8 }} />
                 <Text style={styles.modalTitle}>Flexible Timing Schedule Engine</Text>
               </View>
-              <TouchableOpacity onPress={() => setActiveModal(null)}>
-                <X color="#FFF" size={24} />
+              <TouchableOpacity
+                onPress={() => setActiveModal(null)}
+                style={styles.modalCloseBtnPill}
+                accessibilityLabel="Close"
+              >
+                <X color="#FFF" size={18} />
+                <Text style={styles.modalCloseBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -6155,28 +6339,116 @@ const styles = StyleSheet.create({
   },
   modalBg: {
     flex: 1,
-    backgroundColor: 'rgba(8, 0, 18, 0.85)',
+    backgroundColor: 'rgba(5, 0, 14, 0.92)',
     justifyContent: 'center',
-    padding: 20
+    padding: 16
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(5, 0, 14, 0.92)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16
   },
   modalContent: {
-    backgroundColor: COLORS.cardSurface,
-    borderRadius: 28,
-    padding: 24,
-    borderWidth: 1.5,
-    borderColor: '#731bb8',
-    maxHeight: '85%'
+    backgroundColor: '#1b0730',
+    borderRadius: 24,
+    padding: 22,
+    borderWidth: 2,
+    borderColor: '#a855f7',
+    maxHeight: '92%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 12,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.15)',
   },
   modalTitle: {
-    color: COLORS.textMain,
+    color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '800'
+    fontWeight: '800',
+    flex: 1,
+    letterSpacing: 0.2,
+  },
+  modalCloseBtnPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#dc2626',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 22,
+    minHeight: 44,
+    minWidth: 84,
+    borderWidth: 1.5,
+    borderColor: '#fca5a5',
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  modalCloseBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    marginLeft: 6,
+  },
+  modalSimpleSubtitle: {
+    color: '#f3e8ff',
+    fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  modalBigGreenBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    paddingVertical: 16,
+    borderRadius: 16,
+    marginTop: 16,
+    minHeight: 54,
+    borderWidth: 1.5,
+    borderColor: '#34d399',
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  modalBigGreenBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  quickPresetCardBig: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(168, 85, 247, 0.16)',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#a855f7',
+    minHeight: 52,
+  },
+  quickPresetCardBigText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   radialContainer: {
     alignItems: 'center',
