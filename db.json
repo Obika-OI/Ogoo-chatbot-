@@ -1,0 +1,70 @@
+{
+  "users": {
+    "auw7ig50mtu": {
+      "deviceId": "auw7ig50mtu",
+      "createdAt": "2026-08-27T14:12:16.923Z",
+      "updatedAt": "2026-08-27T14:12:16.923Z",
+      "ip": "212.250.188.205, 169.254.169.126"
+    },
+    "e2360lcr1u": {
+      "deviceId": "e2360lcr1u",
+      "createdAt": "2026-08-27T14:51:43.866Z",
+      "updatedAt": "2026-08-27T14:51:43.867Z",
+      "ip": "212.250.188.205, 169.254.169.126"
+    }
+  },
+  "conversations": {
+    "auw7ig50mtu": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Hello! I'm Ogoo. How can I help you today?"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Hi"
+          }
+        ]
+      },
+      {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Hi there! It's so lovely to connect with you. I'm Ogoo, your personal healthcare companion. \n\nBefore we dive in, could you tell me—is this your first time chatting with me, or have we met before? \n\n*(I've already picked up your device context so we can keep your health profile seamlessly synchronized!)*"
+          }
+        ]
+      }
+    ],
+    "e2360lcr1u": [
+      {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Hello! I'm Ogoo. How can I help you today?"
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Hi"
+          }
+        ]
+      },
+      {
+        "role": "model",
+        "parts": [
+          {
+            "text": "Hello there! It is wonderful to meet you. I'm Ogoo, your personal healthcare assistant and companion. \n\nBefore we dive in, is this your first time speaking with me, or have we met before? \n\n(I’ve noticed your device connection and IP in the background, which will help keep your health profile nicely synchronized!)"
+          }
+        ]
+      }
+    ]
+  }
+}
